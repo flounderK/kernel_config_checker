@@ -53,3 +53,5 @@ dkms.conf
 
 # vim
 *.swp
+
+kernel_config_checker
