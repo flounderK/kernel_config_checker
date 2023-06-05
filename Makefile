@@ -15,12 +15,15 @@ $(call allow-override,CC,$(CC))
 $(call allow-override,LD,$(LD))
 endif
 
-CDEBUG=-g
-CFLAGS=-g -Iinclude -Isrc
+CDEBUG=-O0 -g
+CFLAGS=-Iinclude -Isrc
 
 BINARY=kernel_config_checker
 
-OBJ=build
+BUILD_DIR=build
+DEBUG_DIR=debug
+RELEASE_DIR=release
+OBJ=$(BUILD_DIR)
 
 OBJECTS += src/main.o
 OBJECTS += src/syscall_checks.o
@@ -28,18 +31,35 @@ OBJECTS += src/err_lookup.o
 OBJECTS += src/utils.o
 OBJECTS += src/system_checks.o
 
-OBJECT_FILES=$(addprefix $(OBJ)/, $(OBJECTS))
+RELEASE_OBJECT_FILES=$(addprefix $(OBJ)/release/, $(OBJECTS))
+DBG_OBJECT_FILES=$(addprefix $(OBJ)/debug/, $(OBJECTS))
 
-.PHONY: all clean tests
+.PHONY: all clean tests debug release
 
-
-$(OBJ)/%.o: %.c
+$(OBJ)/$(DEBUG_DIR)/%.o: CFLAGS += $(CDEBUG)
+$(OBJ)/$(DEBUG_DIR)/%.o: %.c
 	@mkdir -p $(@D)
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-all: clean $(BINARY)
+$(OBJ)/$(RELEASE_DIR)/%.o: %.c
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -c -o $@ $<
 
-# $(BINARY): $(OBJ)/src/main.o $(OBJ)/src/syscall_checks.o $(OBJ)/src/err_lookup.o
+all: debug release
+
+$(OBJ)/$(DEBUG_DIR)/$(BINARY): $(DBG_OBJECT_FILES)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) $(CDEBUG) -o $@ $^
+
+debug: $(OBJ)/$(DEBUG_DIR)/$(BINARY)
+
+
+$(OBJ)/$(RELEASE_DIR)/$(BINARY): $(RELEASE_OBJECT_FILES)
+	@mkdir -p $(@D)
+	$(CC) $(CFLAGS) -o $@ $^
+
+release: $(OBJ)/$(RELEASE_DIR)/$(BINARY)
+
 $(BINARY): $(OBJECT_FILES)
 	$(CC) $(CFLAGS) -o $@ $^
 
